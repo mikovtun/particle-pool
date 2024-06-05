@@ -44,6 +44,18 @@ static PosColorVertex s_cubeVertices[] =
 };
 static const uint16_t s_cubeTriList[] = { 2, 1, 0, 2, 3, 1, 5, 6, 4, 7, 6, 5, 4, 2, 0, 6, 2, 4, 3, 5, 1, 3, 7, 5, 1, 4, 0, 1, 5, 4, 6, 3, 2, 7, 3, 6 };
 
+static inline glm::vec3 mousePosToSpherePos( const double& xpos, const double& ypos ) {
+  // Maps a 2D mouse position (range [0-1]) to the surface of a sphere
+  constexpr double radius = 35.0;
+  const double theta = M_PI * xpos;
+  const double phi   = 2.0 * M_PI * ypos;
+  return glm::vec3( radius * sin(theta) * cos(phi), 
+                    radius * sin(theta) * sin(phi),
+                    radius * cos(theta) );
+}
+
+
+
 class ExampleCubes : public bigg::Application
 {
 	void initialize( int _argc, char** _argv )
@@ -91,7 +103,21 @@ class ExampleCubes : public bigg::Application
 	void update( float dt )
 	{
 		mTime += dt;
-		glm::mat4 view = glm::lookAt( glm::vec3( 0.0f, 0.0f, -35.0f ), glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3( 0.0f, 1.0f, 0.0f ) );
+    // Set the camera position
+    double xpos = 0.0;
+    double ypos = 0.5;
+    int windowWidth, windowHeight;
+    glfwGetWindowSize( mWindow, &windowWidth, &windowHeight );
+    glm::vec3 cameraPos;
+    // If the cursor is in the window, use it to set the position
+    if (glfwGetWindowAttrib( mWindow, GLFW_HOVERED )) {
+      glfwGetCursorPos( mWindow, &xpos, &ypos );
+      xpos /= (double)windowWidth;      // Normalize to [0,1]
+      ypos /= (double)windowHeight;
+    }
+    cameraPos = mousePosToSpherePos( xpos, ypos );
+
+		glm::mat4 view = glm::lookAt( cameraPos, glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3( 0.0f, 1.0f, 0.0f ) );
 		glm::mat4 proj = glm::perspective( glm::radians( 60.0f ), float( getWidth() ) / getHeight(), 0.1f, 100.0f );
 		bgfx::setViewTransform( 0, &view[0][0], &proj[0][0] );
 		bgfx::setViewRect( 0, 0, 0, uint16_t( getWidth() ), uint16_t( getHeight() ) );
